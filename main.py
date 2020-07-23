@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from elastictabstops import Table
 import socket
 from struct import pack, unpack
 
@@ -221,32 +222,32 @@ def parse_header(msg):
     ra = (parsed_msg[1] >> 7) & 0x01
     rcode = parsed_msg[1] & 0x0f
 
-    print(f'ID: {id}')
-    print(f'QR: {get_qr_info(qr)}')
-    print(f'OPCODE: {get_opcode_info(opcode)}')
-    print(f'AA: {get_aa_info(aa)}')
-    print(f'TC: {get_tc_info(tc)}')
-    print(f'RD: {get_rd_info(rd)}')
-    print(f'RA: {get_ra_info(ra)}')
-    print(f'RCODE: {get_rcode_info(rcode)}')
-    print(f'QD Count: {parsed_msg[2]}')
-    print(f'AN Count: {parsed_msg[3]}')
-    print(f'NS Count: {parsed_msg[4]}')
-    print(f'AR Count: {parsed_msg[5]}')
+    printable_table = [
+        ["ID", "QR", "OPCODE", "AA", "TC", "RD", "RA", "RCODE", "QD", "AN", "NS", "AR"],
+        [f'{id}', f'{get_qr_info(qr)}', f'{get_opcode_info(opcode)}',
+        f'{get_aa_info(aa)}', f'{get_tc_info(tc)}', f'{get_rd_info(rd)}',
+        f'{get_ra_info(ra)}', f'{get_rcode_info(rcode)}',
+        f'{parsed_msg[2]}', f'{parsed_msg[3]}', f'{parsed_msg[4]}', f'{parsed_msg[5]}']
+    ]
+    print("# HEADER")
+    print(Table(printable_table).to_spaces())
 
 # Offsetやドメインを除くAnswerから、type, class, ttl, rdlengthを求める
 def parse_answer(msg):
     answer_without_rdata = msg[:10]
     parsed_msg = unpack('!HHIH', answer_without_rdata)
     rd_length = parsed_msg[3]
-    print(f'Type: {get_type_info(parsed_msg[0])}')
-    print(f'Class: {get_class_info(parsed_msg[1])}')
-    print(f'TTL: {parsed_msg[2]}')
-    print(f'RDLENGTH: {rd_length}')
+
     # IPv4アドレス
     if get_type_info(parsed_msg[0]) == "A":
         ipv4addr = msg[10:(10 + rd_length)]
-        print(f'IP Address: {".".join(map(str, unpack("!4B", ipv4addr)))}')
+
+    printable_table = [
+        ["TYPE", "CLASS", "TTL", "IP_OR_FQDN"],
+        [f'{get_type_info(parsed_msg[0])}', f'{get_class_info(parsed_msg[1])}', f'{parsed_msg[2]}', ".".join(map(str, unpack("!4B", ipv4addr)))]
+    ]
+    print("# ANSWER SECTION")
+    print(Table(printable_table).to_spaces())
 
 def main():
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -267,7 +268,7 @@ def main():
     rest_without_query = rest[len(make_question(args.fqdn)) - 1:]
     # offsetであればQuestionのFQDNを使い回す
     if rest_without_query[0:2] == b'\xc0\x0c':
-        print(f'Domain: {args.fqdn}')
+        print(f'\nDomain: {args.fqdn}\n')
         rest_without_query = rest_without_query[2:]
     parse_answer(rest_without_query)
     s.close()
