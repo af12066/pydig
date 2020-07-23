@@ -2,6 +2,8 @@
 
 import argparse
 from elastictabstops import Table
+import math
+import random
 import socket
 from struct import pack, unpack
 
@@ -170,7 +172,7 @@ DEFAULT_DNS_HOST = "8.8.8.8"
 
 # リクエストヘッダを返す
 def make_header():
-    id = pack('!H', 0x05FF)
+    id = pack('!H', math.ceil(random.uniform(0x0000, 0xFFFF)))
     qr = QR["QUERY"]
     opcode = OPCODE["QUERY"]
     aa = AA[False]
